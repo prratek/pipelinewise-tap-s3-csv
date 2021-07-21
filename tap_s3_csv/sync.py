@@ -7,6 +7,7 @@ import csv
 from typing import Dict
 
 from singer import metadata, Transformer, utils, get_bookmark, write_bookmark, write_state, write_record, get_logger
+from singer.transform import SchemaMismatch
 from singer_encodings.csv import get_row_iterator # pylint:disable=no-name-in-module
 
 from tap_s3_csv import s3
@@ -77,6 +78,7 @@ def sync_table_file(config: Dict, s3_path: str, table_spec: Dict, stream: Dict) 
     iterator = get_row_iterator(s3_file_handle._raw_stream, table_spec)  # pylint:disable=protected-access
 
     records_synced = 0
+    mismatches = 0
 
     for row in iterator:
         custom_columns = {
@@ -88,10 +90,17 @@ def sync_table_file(config: Dict, s3_path: str, table_spec: Dict, stream: Dict) 
         }
         rec = {**row, **custom_columns}
 
-        with Transformer() as transformer:
-            to_write = transformer.transform(rec, stream['schema'], metadata.to_map(stream['metadata']))
+        try:
+            with Transformer() as transformer:
+                to_write = transformer.transform(rec, stream['schema'], metadata.to_map(stream['metadata']))
 
-        write_record(table_name, to_write)
-        records_synced += 1
+            write_record(table_name, to_write)
+            records_synced += 1
+
+        except SchemaMismatch:
+            mismatches += 1
+
+    if mismatches > 0:
+        LOGGER.warning(f"Encountered {mismatches} SchemaMismatch errors in {s3_path}")
 
     return records_synced
