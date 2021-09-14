@@ -2,17 +2,68 @@
 Syncing related functions
 """
 
+import codecs
 import sys
 import csv
 from typing import Dict
 
 from singer import metadata, Transformer, utils, get_bookmark, write_bookmark, write_state, write_record, get_logger
 from singer.transform import SchemaMismatch
-from singer_encodings.csv import get_row_iterator # pylint:disable=no-name-in-module
 
 from tap_s3_csv import s3
 
 LOGGER = get_logger('tap_s3_csv')
+
+SDC_EXTRA_COLUMN = "_sdc_extra"
+
+
+def get_row_iterator(iterable, options=None, headers_in_catalog=None, with_duplicate_headers=False):
+    """
+    Accepts an iterable, options and returns a csv.DictReader which can be used to yield CSV rows.
+    """
+
+    options = options or {}
+    reader = []
+    headers = set()
+    file_stream = codecs.iterdecode(iterable, encoding='utf-8')
+    delimiter = options.get('delimiter', ',')
+    quotechar = options.get('quotechar', '"')
+    escapechar = options.get('escapechar')
+
+    reader = csv.DictReader(
+        (line.replace('\0', '') for line in file_stream),
+        fieldnames=None,
+        restkey=SDC_EXTRA_COLUMN,
+        delimiter=delimiter,
+        escapechar=escapechar,
+        quotechar=quotechar
+    )
+    try:
+        headers = set(reader.fieldnames)
+    except TypeError:
+        # handle NoneType error when empty file is found: tap-SFTP
+        pass
+
+    if options.get('key_properties'):
+        key_properties = set(options['key_properties'])
+        if not key_properties.issubset(headers):
+            raise Exception('CSV file missing required headers: {}'
+                            .format(key_properties - headers))
+
+    if options.get('date_overrides'):
+        date_overrides = set(options['date_overrides'])
+        if not date_overrides.issubset(headers):
+            raise Exception('CSV file missing date_overrides headers: {}'
+                            .format(date_overrides - headers))
+
+    return reader
+
+
+def _remove_escaped_quotes(rec: Dict) -> Dict:
+    res = rec
+    if res.get("url"):
+        res["url"] = res["url"].replace('\"', "")
+    return res
 
 
 def sync_stream(config: Dict, state: Dict, table_spec: Dict, stream: Dict) -> int:
