@@ -9,6 +9,9 @@ import more_itertools
 import re
 import backoff
 import boto3
+import io
+import gzip
+import zipfile
 
 from typing import Dict, Generator, Optional, Iterator
 from botocore.exceptions import ClientError
@@ -135,8 +138,20 @@ def sample_file(config: Dict, table_spec: Dict, s3_path: str, sample_rate: int) 
     :return: generator containing the samples as dictionaries
     """
     file_handle = get_file_handle(config, s3_path)
+    file_stream = get_file_stream(config, s3_path)
+
+    # csv.get_row_iterator will check key-properties exist in the csv
+    # so we need to give them the list minus the meta field such as SDC_SOURCE_FILE_COLUMN or others
+    reduced_table_spec = {"key_properties": table_spec.get("key_properties", []).copy()}
+    if SDC_SOURCE_BUCKET_COLUMN in reduced_table_spec["key_properties"]:
+        reduced_table_spec["key_properties"].remove(SDC_SOURCE_BUCKET_COLUMN)
+    if SDC_SOURCE_FILE_COLUMN in reduced_table_spec["key_properties"]:
+        reduced_table_spec["key_properties"].remove(SDC_SOURCE_FILE_COLUMN)
+    if SDC_SOURCE_LINENO_COLUMN in reduced_table_spec["key_properties"]:
+        reduced_table_spec["key_properties"].remove(SDC_SOURCE_LINENO_COLUMN)
+
     # _raw_stream seems like the wrong way to access this..
-    iterator = get_row_iterator(file_handle._raw_stream, table_spec)  # pylint:disable=protected-access
+    iterator = get_row_iterator(file_stream, table_spec)  # pylint:disable=protected-access
 
     current_row = 0
 
@@ -307,3 +322,45 @@ def get_file_handle(config: Dict, s3_path: str) -> Iterator:
     s3_bucket = s3_client.Bucket(bucket)
     s3_object = s3_bucket.Object(s3_path)
     return s3_object.get()['Body']
+
+
+def get_file_stream(config: Dict, s3_path: str) -> Iterator:
+    """
+    Get file stream to the file located in the s3 path.
+    It automatically decompress the file if it is zipped.
+    :param config: tap config
+    :param s3_path: file path in S3
+    :return: file stream
+    """
+    file_handle = get_file_handle(config, s3_path)
+    # if csv is zipped, unzip it
+    if s3_path.endswith('zip'):
+        stream = stream_zip_decompress(file_handle._raw_stream)
+    elif s3_path.endswith('gz'):
+        stream = stream_gz_decompress(file_handle._raw_stream)
+        # LOGGER.warning(next(stream))
+    else:
+        stream = file_handle._raw_stream
+    return stream
+
+
+def stream_gz_decompress(stream: Iterator) -> Iterator:
+    """
+    Decompress first file of a gzipped file stream
+    :param stream: file stream
+    :return: uncompressed file stream
+    """
+    buffer = gzip.decompress(stream.read())
+    for line in buffer.splitlines():
+        yield line
+
+
+def stream_zip_decompress(stream: Iterator) -> Iterator:
+    """
+    Decompress first file of a zipped file stream
+    :param stream: file stream
+    :return: uncompressed file stream
+    """
+    buffer = io.BytesIO(stream.read())
+    file = zipfile.ZipFile(buffer)
+    return file.open(file.infolist()[0])

@@ -117,7 +117,7 @@ def sync_table_file(config: Dict, s3_path: str, table_spec: Dict, stream: Dict) 
     bucket = config['bucket']
     table_name = table_spec['table_name']
 
-    s3_file_handle = s3.get_file_handle(config, s3_path)
+    s3_file_stream = s3.get_file_stream(config, s3_path)
     # We observed data who's field size exceeded the default maximum of
     # 131072. We believe the primary consequence of the following setting
     # is that a malformed, wide CSV would potentially parse into a single
@@ -126,7 +126,17 @@ def sync_table_file(config: Dict, s3_path: str, table_spec: Dict, stream: Dict) 
     # need to be fixed. The other consequence of this could be larger
     # memory consumption but that's acceptable as well.
     csv.field_size_limit(sys.maxsize)
-    iterator = get_row_iterator(s3_file_handle._raw_stream, table_spec)  # pylint:disable=protected-access
+
+    # csv.get_row_iterator will check key-properties exist in the csv
+    # so we need to give them the list minus the meta field such as SDC_SOURCE_FILE_COLUMN or others
+    reduced_table_spec = {"key_properties": table_spec.get("key_properties", []).copy()}
+    if s3.SDC_SOURCE_BUCKET_COLUMN in reduced_table_spec["key_properties"]:
+        reduced_table_spec["key_properties"].remove(s3.SDC_SOURCE_BUCKET_COLUMN)
+    if s3.SDC_SOURCE_FILE_COLUMN in reduced_table_spec["key_properties"]:
+        reduced_table_spec["key_properties"].remove(s3.SDC_SOURCE_FILE_COLUMN)
+    if s3.SDC_SOURCE_LINENO_COLUMN in reduced_table_spec["key_properties"]:
+        reduced_table_spec["key_properties"].remove(s3.SDC_SOURCE_LINENO_COLUMN)
+    iterator = get_row_iterator(s3_file_stream, reduced_table_spec)  # pylint:disable=protected-access
 
     records_synced = 0
     mismatches = 0
