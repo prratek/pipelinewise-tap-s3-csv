@@ -51,6 +51,25 @@ def generate_schema(samples: List[Dict], table_spec: Dict) -> Dict:
     return schema
 
 
+def use_existing_schema(config: Dict) -> Dict:
+    """
+    Guess columns types from the given samples and build json schema
+    :param samples: List of dictionaries containing samples data from csv file(s)
+    :param table_spec: table/stream specs given in the tap definition
+    :return: dictionary where the keys are the headers and values are the guessed types - compatible with json schema
+    """
+    schema = {}
+
+    keys = config['keys']
+
+    for header in keys:
+
+        schema[header] = {
+            'type': ['null', 'string']
+        }
+
+    return schema
+
 def _csv2bytesio(data: List[Dict]) -> io.BytesIO:
     """
     Converts a list of dictionaries to a csv BytesIO which is a csv file like object
