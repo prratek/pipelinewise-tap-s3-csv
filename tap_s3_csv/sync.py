@@ -17,7 +17,7 @@ LOGGER = get_logger('tap_s3_csv')
 SDC_EXTRA_COLUMN = "_sdc_extra"
 
 
-def get_row_iterator(iterable, options=None, headers_in_catalog=None, with_duplicate_headers=False):
+def get_row_iterator(iterable, options=None, headers_in_catalog=None, with_duplicate_headers=False, header_fields=None):
     """
     Accepts an iterable, options and returns a csv.DictReader which can be used to yield CSV rows.
     """
@@ -30,9 +30,14 @@ def get_row_iterator(iterable, options=None, headers_in_catalog=None, with_dupli
     quotechar = options.get('quotechar', '"')
     escapechar = options.get('escapechar')
 
+    # Inject headers from configs.
+    field_names = None
+    if headers_in_catalog:
+        field_names = header_fields
+
     reader = csv.DictReader(
         (line.replace('\0', '') for line in file_stream),
-        fieldnames=None,
+        fieldnames=field_names,
         restkey=SDC_EXTRA_COLUMN,
         delimiter=delimiter,
         escapechar=escapechar,
@@ -40,6 +45,8 @@ def get_row_iterator(iterable, options=None, headers_in_catalog=None, with_dupli
     )
     try:
         headers = set(reader.fieldnames)
+        LOGGER.info('Attempting to set header witg "%s".', reader.fieldnames[0])
+
     except TypeError:
         # handle NoneType error when empty file is found: tap-SFTP
         pass
@@ -98,11 +105,11 @@ def sync_stream(config: Dict, state: Dict, table_spec: Dict, stream: Dict) -> in
         state = write_bookmark(state, table_name, 'modified_since', s3_file['last_modified'].isoformat())
         write_state(state)
 
-    LOGGER.info('Wrote %s records for table "%s". HELLOOOOOOOOOOO', records_streamed, table_name)
+    LOGGER.info('Wrote %s records for table "%s".', records_streamed, table_name)
 
     return records_streamed
 
-
+# how do we get the catalog?
 def sync_table_file(config: Dict, s3_path: str, table_spec: Dict, stream: Dict) -> int:
     """
     Sync a given csv found file
@@ -136,7 +143,28 @@ def sync_table_file(config: Dict, s3_path: str, table_spec: Dict, stream: Dict) 
         reduced_table_spec["key_properties"].remove(s3.SDC_SOURCE_FILE_COLUMN)
     if s3.SDC_SOURCE_LINENO_COLUMN in reduced_table_spec["key_properties"]:
         reduced_table_spec["key_properties"].remove(s3.SDC_SOURCE_LINENO_COLUMN)
-    iterator = get_row_iterator(s3_file_stream, reduced_table_spec)  # pylint:disable=protected-access
+
+    custom_headers = False
+    fields = None
+
+
+    if config.get('infer_schema', None) and config['infer_schema'].lower() == "false":
+        custom_headers = True
+        # fields = config['keys'][table_name]
+
+        fields = list(stream['schema']['properties'].keys())
+        # fields = ['nid', 'type', 'title', 'author_id', 'published_flag', 'first_publish', 'last_publish', 'updated_time', 'homepage_flag', 'sponsored_flag']
+
+        # fields = ['nid', 'type', 'title', 'author_uid', 'created', 'changed', 'gallery_uid']
+        LOGGER.info('Custom headers is set to True "%d"', fields)
+
+
+    iterator = get_row_iterator(
+        iterable=s3_file_stream,
+        options=reduced_table_spec,
+        headers_in_catalog=custom_headers,
+        header_fields=fields
+        )  # pylint:disable=protected-access
 
     records_synced = 0
     mismatches = 0

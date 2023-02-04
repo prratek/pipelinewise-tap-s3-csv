@@ -51,24 +51,28 @@ def do_sync(config: Dict, catalog: Dict, state: Dict) -> None:
     :param state: current state
     :return: Nothing
     """
-    LOGGER.info('Starting sync.')
+    LOGGER.info('Starting sync in do_sync.')
 
-    for stream in catalog['streams']:
-        stream_name = stream['tap_stream_id']
-        mdata = metadata.to_map(stream['metadata'])
-        table_spec = next(s for s in config['tables'] if s['table_name'] == stream_name)
-        if not stream_is_selected(mdata):
-            LOGGER.info("%s: Skipping - not selected", stream_name)
-            continue
+    try:
+        for stream in catalog['streams']:
+            stream_name = stream['tap_stream_id']
+            mdata = metadata.to_map(stream['metadata'])
+            LOGGER.info("The current stream %s", stream_name)
+            table_spec = next(s for s in config['tables'] if s['table_name'] == stream_name)
+            if not stream_is_selected(mdata):
+                LOGGER.info("%s: Skipping - not selected", stream_name)
+                continue
 
-        singer.write_state(state)
-        key_properties = metadata.get(mdata, (), 'table-key-properties')
-        singer.write_schema(stream_name, stream['schema'], key_properties)
+            singer.write_state(state)
+            key_properties = metadata.get(mdata, (), 'table-key-properties')
+            singer.write_schema(stream_name, stream['schema'], key_properties)
 
-        LOGGER.info("%s: Starting sync", stream_name)
-        counter_value = sync_stream(config, state, table_spec, stream)
-        LOGGER.info("%s: Completed sync (%s rows)", stream_name, counter_value)
-
+            LOGGER.info("%s: Starting sync", stream_name)
+            counter_value = sync_stream(config, state, table_spec, stream)
+            LOGGER.info("%s: Completed sync (%s rows) using Mimi's Version", stream_name, counter_value)
+    except Exception as e:
+        LOGGER.error(e)
+        pass
     LOGGER.info('Done syncing.')
 
 
