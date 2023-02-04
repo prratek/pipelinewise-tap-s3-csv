@@ -106,39 +106,6 @@ def get_sampled_schema_for_table(config: Dict, table_spec: Dict) -> Dict:
     }
 
 
-
-def get_provided_schema_for_table(config: Dict, table_spec: Dict) -> Dict:
-    """
-    Use json schema using a sample of table/stream data
-    :param config: Tap config
-    :param table_spec: tables specs
-    :return: detected schema
-    """
-    LOGGER.info('Sampling records to determine table schema.')
-
-    modified_since = utils.strptime_with_tz(config['start_date'])
-    s3_files_gen = get_input_files_for_table(config, table_spec, modified_since)
-
-    samples = list(sample_files(config, table_spec, s3_files_gen))
-
-    if not samples:
-        return {}
-
-    metadata_schema = {
-        SDC_SOURCE_BUCKET_COLUMN: {'type': 'string'},
-        SDC_SOURCE_FILE_COLUMN: {'type': 'string'},
-        SDC_SOURCE_LINENO_COLUMN: {'type': 'integer'},
-        SDC_EXTRA_COLUMN: {'type': 'array', 'items': {'type': 'string'}},
-    }
-
-    data_schema = conversion.use_existing_schema(config)
-
-    return {
-        'type': 'object',
-        'properties': merge_dicts(data_schema, metadata_schema)
-    }
-
-
 def merge_dicts(first: Dict, second: Dict) -> Dict:
     """
     Merged two given dictionaries

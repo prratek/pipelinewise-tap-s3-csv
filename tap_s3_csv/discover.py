@@ -16,10 +16,7 @@ def discover_streams(config: Dict)-> List[Dict]:
     streams = []
 
     for table_spec in config['tables']:
-        if config['infer_schema'].lower() == 'false':
-            schema = schema_from_catalog(config, table_spec)
-        else:
-            schema = discover_schema(config, table_spec)
+        schema = discover_schema(config, table_spec)
 
         streams.append({'stream': table_spec['table_name'],
                         'tap_stream_id': table_spec['table_name'],
@@ -45,27 +42,6 @@ def discover_schema(config: Dict, table_spec: Dict) -> Dict:
 
     return sampled_schema
 
-def schema_from_catalog(config: Dict, table_spec: Dict) -> Dict:
-    """
-    Forces using the existing json catalog of the given table
-    :param config: connection and streams configuration
-    :param table_spec: table specs
-    :return: provided schema
-    """
-    """
-    Detects json schema using a sample of table/stream data
-    :param config: Tap config
-    :param table_spec: tables specs
-    :return: detected schema
-    """
-    catalog_schema = s3.get_provided_schema_for_table(config, table_spec)
-
-    # Raise an exception if schema cannot sampled. Empty schema will fail and target side anyways
-    if not catalog_schema:
-        raise ValueError("{} - {} file(s) has no data and cannot analyse the content to generate the required schema."
-                         .format(table_spec.get('search_prefix', ''), table_spec.get('search_pattern', '')))
-
-    return catalog_schema
 
 def load_metadata(table_spec: Dict, schema: Dict)-> List:
     """

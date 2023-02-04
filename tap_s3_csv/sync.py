@@ -45,7 +45,6 @@ def get_row_iterator(iterable, options=None, headers_in_catalog=None, with_dupli
     )
     try:
         headers = set(reader.fieldnames)
-        LOGGER.info('Attempting to set header witg "%s".', reader.fieldnames[0])
 
     except TypeError:
         # handle NoneType error when empty file is found: tap-SFTP
@@ -109,7 +108,6 @@ def sync_stream(config: Dict, state: Dict, table_spec: Dict, stream: Dict) -> in
 
     return records_streamed
 
-# how do we get the catalog?
 def sync_table_file(config: Dict, s3_path: str, table_spec: Dict, stream: Dict) -> int:
     """
     Sync a given csv found file
@@ -148,15 +146,11 @@ def sync_table_file(config: Dict, s3_path: str, table_spec: Dict, stream: Dict) 
     fields = None
 
 
+    # fetches schema from catalog.
     if config.get('infer_schema', None) and config['infer_schema'].lower() == "false":
         custom_headers = True
-        # fields = config['keys'][table_name]
-
         fields = list(stream['schema']['properties'].keys())
-        # fields = ['nid', 'type', 'title', 'author_id', 'published_flag', 'first_publish', 'last_publish', 'updated_time', 'homepage_flag', 'sponsored_flag']
-
-        # fields = ['nid', 'type', 'title', 'author_uid', 'created', 'changed', 'gallery_uid']
-        LOGGER.info('Custom headers is set to True "%d"', fields)
+        LOGGER.info('Custom headers is set to True, proceeding with the following fields: "%d"', fields)
 
 
     iterator = get_row_iterator(
