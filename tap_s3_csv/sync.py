@@ -98,7 +98,7 @@ def sync_stream(config: Dict, state: Dict, table_spec: Dict, stream: Dict) -> in
         state = write_bookmark(state, table_name, 'modified_since', s3_file['last_modified'].isoformat())
         write_state(state)
 
-    LOGGER.info('Wrote %s records for table "%s".', records_streamed, table_name)
+    LOGGER.info('Wrote %s records for table "%s". HELLOOOOOOOOOOO', records_streamed, table_name)
 
     return records_streamed
 

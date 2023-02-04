@@ -67,7 +67,7 @@ def do_sync(config: Dict, catalog: Dict, state: Dict) -> None:
 
         LOGGER.info("%s: Starting sync", stream_name)
         counter_value = sync_stream(config, state, table_spec, stream)
-        LOGGER.info("%s: Completed sync (%s rows) using Mimi's Version", stream_name, counter_value)
+        LOGGER.info("%s: Completed sync (%s rows)", stream_name, counter_value)
 
     LOGGER.info('Done syncing.')
 
