@@ -150,7 +150,7 @@ def sync_table_file(config: Dict, s3_path: str, table_spec: Dict, stream: Dict) 
     if config.get('infer_schema', None) and config['infer_schema'].lower() == "false":
         custom_headers = True
         fields = list(stream['schema']['properties'].keys())
-        LOGGER.info('Custom headers is set to True, proceeding with the following fields: "%d"', fields)
+        LOGGER.info('Custom headers is set to True, proceeding with the following fields: "%s"', fields)
 
 
     iterator = get_row_iterator(
