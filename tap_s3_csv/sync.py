@@ -26,9 +26,11 @@ def get_row_iterator(iterable, options=None, headers_in_catalog=None, with_dupli
     reader = []
     headers = set()
     file_stream = codecs.iterdecode(iterable, encoding='utf-8')
+
+    # TODO: I don't think this portion has ever properly fetched the options from our meltano.yml. Gonna leave this as a bug fix for now since we do not use any other options besides these defaults - Mimi
     delimiter = options.get('delimiter', ',')
     quotechar = options.get('quotechar', '"')
-    escapechar = options.get('escapechar')
+    escapechar = options.get('escapechar', '\\')
 
     # Inject headers from configs.
     field_names = None
