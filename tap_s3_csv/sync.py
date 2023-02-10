@@ -155,11 +155,7 @@ def sync_table_file(config: Dict, s3_path: str, table_spec: Dict, stream: Dict) 
         fields = list(stream['schema']['properties'].keys())
         LOGGER.info('Custom headers is set to True, proceeding with the following fields: "%s"', fields)
 
-    LOGGER.info("Here's the specs: %s", config)
-    LOGGER.info("Here's the goods: %s", reduced_table_spec)
-
     reduced_table_spec['csv_options'] = csv_options
-    LOGGER.info("Here's the goods: %s", reduced_table_spec)
 
     iterator = get_row_iterator(
         iterable=s3_file_stream,
