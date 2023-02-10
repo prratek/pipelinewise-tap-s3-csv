@@ -23,14 +23,14 @@ def get_row_iterator(iterable, options=None, headers_in_catalog=None, with_dupli
     """
 
     options = options or {}
+    csv_options = options.get('csv_options') or {}
     reader = []
     headers = set()
     file_stream = codecs.iterdecode(iterable, encoding='utf-8')
 
-    # TODO: I don't think this portion has ever properly fetched the options from our meltano.yml. Gonna leave this as a bug fix for now since we do not use any other options besides these defaults - Mimi
-    delimiter = options.get('delimiter', ',')
-    quotechar = options.get('quotechar', '"')
-    escapechar = options.get('escapechar', '\\')
+    delimiter = csv_options.get('delimiter', ',')
+    quotechar = csv_options.get('quotechar', '"')
+    escapechar = csv_options.get('escapechar', '\\')
 
     # Inject headers from configs.
     field_names = None
@@ -123,6 +123,7 @@ def sync_table_file(config: Dict, s3_path: str, table_spec: Dict, stream: Dict) 
 
     bucket = config['bucket']
     table_name = table_spec['table_name']
+    csv_options = next((t for t in config.get('tables') if t["table_name"] == table_name), None)
 
     s3_file_stream = s3.get_file_stream(config, s3_path)
     # We observed data who's field size exceeded the default maximum of
@@ -154,6 +155,11 @@ def sync_table_file(config: Dict, s3_path: str, table_spec: Dict, stream: Dict) 
         fields = list(stream['schema']['properties'].keys())
         LOGGER.info('Custom headers is set to True, proceeding with the following fields: "%s"', fields)
 
+    LOGGER.info("Here's the specs: %s", config)
+    LOGGER.info("Here's the goods: %s", reduced_table_spec)
+
+    reduced_table_spec['csv_options'] = csv_options
+    LOGGER.info("Here's the goods: %s", reduced_table_spec)
 
     iterator = get_row_iterator(
         iterable=s3_file_stream,
