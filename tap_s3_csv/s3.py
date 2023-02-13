@@ -278,6 +278,7 @@ def list_files_in_bucket(bucket: str, search_prefix: str = None, aws_endpoint_ur
     # override default endpoint for non aws s3 services
     if aws_endpoint_url is not None:
         s3_client = boto3.client('s3', endpoint_url=aws_endpoint_url)
+
     else:
         s3_client = boto3.client('s3')
 
@@ -291,6 +292,8 @@ def list_files_in_bucket(bucket: str, search_prefix: str = None, aws_endpoint_ur
 
     if search_prefix is not None:
         args['Prefix'] = search_prefix
+
+    LOGGER.info("creds are these %s:", boto3.Session()._session._credentials )
 
     paginator = s3_client.get_paginator('list_objects_v2')
     pages = 0
