@@ -58,9 +58,13 @@ def setup_aws_client(config: Dict) -> None:
 
     # Get the required parameters from config file and/or environment variables
     aws_access_key_id = config.get('aws_access_key_id') or os.environ.get('AWS_ACCESS_KEY_ID')
+    LOGGER.info("HELLO %s",  aws_access_key_id)
     aws_secret_access_key = config.get('aws_secret_access_key') or os.environ.get('AWS_SECRET_ACCESS_KEY')
+    LOGGER.info(aws_secret_access_key)
     aws_session_token = config.get('aws_session_token') or os.environ.get('AWS_SESSION_TOKEN')
+    LOGGER.info(aws_session_token)
     aws_profile = config.get('aws_profile') or os.environ.get('AWS_PROFILE')
+    LOGGER.info(aws_profile)
 
     # AWS credentials based authentication
     if aws_access_key_id and aws_secret_access_key:
@@ -311,6 +315,7 @@ def get_file_handle(config: Dict, s3_path: str) -> Iterator:
     :return: file Body iterator
     """
     bucket = config['bucket']
+    LOGGER.info("helppppp %s", bucket)
     aws_endpoint_url = config.get('aws_endpoint_url')
 
     # override default endpoint for non aws s3 services
