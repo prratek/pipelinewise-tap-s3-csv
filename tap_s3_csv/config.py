@@ -11,5 +11,6 @@ CONFIG_CONTRACT = Schema([{
     Optional('date_overrides'): [str],
     Optional('delimiter'): str,
     Optional('quotechar'): str,
-    Optional('escapechar'): str
+    Optional('escapechar'): str,
+    Optional('infer_schema', default='true'): str
 }])

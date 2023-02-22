@@ -274,6 +274,7 @@ def list_files_in_bucket(bucket: str, search_prefix: str = None, aws_endpoint_ur
     # override default endpoint for non aws s3 services
     if aws_endpoint_url is not None:
         s3_client = boto3.client('s3', endpoint_url=aws_endpoint_url)
+
     else:
         s3_client = boto3.client('s3')
 

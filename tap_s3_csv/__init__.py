@@ -53,9 +53,13 @@ def do_sync(config: Dict, catalog: Dict, state: Dict) -> None:
     """
     LOGGER.info('Starting sync.')
 
+
     for stream in catalog['streams']:
         stream_name = stream['tap_stream_id']
         mdata = metadata.to_map(stream['metadata'])
+        LOGGER.info("The current stream %s", stream_name)
+
+        # All items under the tables config must exist in the catalog in order.
         table_spec = next(s for s in config['tables'] if s['table_name'] == stream_name)
         if not stream_is_selected(mdata):
             LOGGER.info("%s: Skipping - not selected", stream_name)

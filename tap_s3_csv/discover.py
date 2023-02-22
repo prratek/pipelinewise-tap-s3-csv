@@ -17,6 +17,7 @@ def discover_streams(config: Dict)-> List[Dict]:
 
     for table_spec in config['tables']:
         schema = discover_schema(config, table_spec)
+
         streams.append({'stream': table_spec['table_name'],
                         'tap_stream_id': table_spec['table_name'],
                         'schema': schema,

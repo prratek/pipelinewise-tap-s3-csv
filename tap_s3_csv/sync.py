@@ -17,22 +17,29 @@ LOGGER = get_logger('tap_s3_csv')
 SDC_EXTRA_COLUMN = "_sdc_extra"
 
 
-def get_row_iterator(iterable, options=None, headers_in_catalog=None, with_duplicate_headers=False):
+def get_row_iterator(iterable, options=None, headers_in_catalog=None, with_duplicate_headers=False, header_fields=None):
     """
     Accepts an iterable, options and returns a csv.DictReader which can be used to yield CSV rows.
     """
 
     options = options or {}
+    csv_options = options.get('csv_options') or {}
     reader = []
     headers = set()
     file_stream = codecs.iterdecode(iterable, encoding='utf-8')
-    delimiter = options.get('delimiter', ',')
-    quotechar = options.get('quotechar', '"')
-    escapechar = options.get('escapechar')
+
+    delimiter = csv_options.get('delimiter', ',')
+    quotechar = csv_options.get('quotechar', '"')
+    escapechar = csv_options.get('escapechar', '\\')
+
+    # Inject headers from configs.
+    field_names = None
+    if headers_in_catalog:
+        field_names = header_fields
 
     reader = csv.DictReader(
         (line.replace('\0', '') for line in file_stream),
-        fieldnames=None,
+        fieldnames=field_names,
         restkey=SDC_EXTRA_COLUMN,
         delimiter=delimiter,
         escapechar=escapechar,
@@ -40,6 +47,7 @@ def get_row_iterator(iterable, options=None, headers_in_catalog=None, with_dupli
     )
     try:
         headers = set(reader.fieldnames)
+
     except TypeError:
         # handle NoneType error when empty file is found: tap-SFTP
         pass
@@ -102,7 +110,6 @@ def sync_stream(config: Dict, state: Dict, table_spec: Dict, stream: Dict) -> in
 
     return records_streamed
 
-
 def sync_table_file(config: Dict, s3_path: str, table_spec: Dict, stream: Dict) -> int:
     """
     Sync a given csv found file
@@ -116,6 +123,7 @@ def sync_table_file(config: Dict, s3_path: str, table_spec: Dict, stream: Dict) 
 
     bucket = config['bucket']
     table_name = table_spec['table_name']
+    csv_options = next((t for t in config.get('tables') if t["table_name"] == table_name), None)
 
     s3_file_stream = s3.get_file_stream(config, s3_path)
     # We observed data who's field size exceeded the default maximum of
@@ -136,7 +144,25 @@ def sync_table_file(config: Dict, s3_path: str, table_spec: Dict, stream: Dict) 
         reduced_table_spec["key_properties"].remove(s3.SDC_SOURCE_FILE_COLUMN)
     if s3.SDC_SOURCE_LINENO_COLUMN in reduced_table_spec["key_properties"]:
         reduced_table_spec["key_properties"].remove(s3.SDC_SOURCE_LINENO_COLUMN)
-    iterator = get_row_iterator(s3_file_stream, reduced_table_spec)  # pylint:disable=protected-access
+
+    custom_headers = False
+    fields = None
+
+
+    # fetches schema from catalog.
+    if 'infer_schema' in config and config['infer_schema'].lower() == "false":
+        custom_headers = True
+        fields = list(stream['schema']['properties'].keys())
+        LOGGER.info('Custom headers is set to True, proceeding with the following fields: "%s"', fields)
+
+    reduced_table_spec['csv_options'] = csv_options
+
+    iterator = get_row_iterator(
+        iterable=s3_file_stream,
+        options=reduced_table_spec,
+        headers_in_catalog=custom_headers,
+        header_fields=fields
+        )  # pylint:disable=protected-access
 
     records_synced = 0
     mismatches = 0

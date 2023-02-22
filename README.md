@@ -72,7 +72,7 @@ For non-profile based authentication set `aws_access_key_id` , `aws_secret_acces
 - **aws_endpoint_url**: (Optional): The complete URL to use for the constructed client. Normally, botocore will automatically construct the appropriate URL to use when communicating with a service. You can specify a complete URL (including the "http/https" scheme) to override this behavior. For example https://nyc3.digitaloceanspaces.com
 - **start_date**: This is the datetime that the tap will use to look for newly updated or created files, based on the modified timestamp of the file.
 - **bucket**: The name of the bucket to search for files under.
-- **tables**: JSON object that the tap will use to search for files, and emit records as "tables" from those files. 
+- **tables**: JSON object that the tap will use to search for files, and emit records as "tables" from those files.
 
 The `table` field consists of one or more objects, that describe how to find files and emit records. A more detailed (and unescaped) example below:
 
@@ -96,6 +96,8 @@ The `table` field consists of one or more objects, that describe how to find fil
 - **key_properties**: These are the "primary keys" of the CSV files, to be used by the target for deduplication and primary key definitions downstream in the destination.
 - **date_overrides**: Specifies field names in the files that are supposed to be parsed as a datetime. The tap doesn't attempt to automatically determine if a field is a datetime, so this will make it explicit in the discovered schema.
 - **delimiter**: This allows you to specify a custom delimiter, such as `\t` or `|`, if that applies to your files.
+- **escapechar**: This allows you to specify a custom escapechar, such as `\\`, if that applies to your files.
+- **infer_schema**: OPTIONAL. Defaults to `true`. If `true` it will attempt to seek generate the schema. If `false` it will take the schema from a provided catalog.
 
 A sample configuration is available inside [config.sample.json](config.sample.json)
 
