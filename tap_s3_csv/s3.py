@@ -228,7 +228,7 @@ def get_input_files_for_table(config: Dict, table_spec: Dict, modified_since: st
         key = s3_object['Key']
         last_modified = s3_object['LastModified']
 
-        if s3_object['Size'] == 0:
+        if s3_object['Size'] == 0 or (s3_object['Size'] == 20 and s3_object['Key'].endswith('.gz')):
             LOGGER.info('Skipping matched file "%s" as it is empty', key)
             unmatched_files_count += 1
             continue
