@@ -12,5 +12,6 @@ CONFIG_CONTRACT = Schema([{
     Optional('delimiter'): str,
     Optional('quotechar'): str,
     Optional('escapechar'): str,
-    Optional('infer_schema', default='true'): str
+    Optional('infer_schema', default='true'): str,
+    Optional('force_strings', default='false'): str
 }])
