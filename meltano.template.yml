@@ -4,6 +4,14 @@ project_id: "tap-s3-csv"
 include_paths:
 - ./*.meltano.yml
 default_environment: test
+environments:
+- name: test
+  config:
+    plugins:
+      extractors:
+      - name: tap-s3-csv
+        config:
+          start_date: '2023-10-01T00:00:00Z'
 plugins:
   extractors:
   - name: "tap-s3-csv"
