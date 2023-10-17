@@ -98,8 +98,21 @@ The `table` field consists of one or more objects, that describe how to find fil
 - **delimiter**: This allows you to specify a custom delimiter, such as `\t` or `|`, if that applies to your files.
 - **escapechar**: This allows you to specify a custom escapechar, such as `\\`, if that applies to your files.
 - **infer_schema**: OPTIONAL. Defaults to `true`. If `true` it will attempt to seek generate the schema. If `false` it will take the schema from a provided catalog.
+- **force_strings**: OPTIONAL. Defaults to `false`. If `true` it will output all read fields as strings. If `false` it will behave under the settings in `infer_schema`.
 
 A sample configuration is available inside [config.sample.json](config.sample.json)
+
+
+### Local Development:
+1. Create a `meltano.yml` file from [meltano.template.yml](meltano.template.yml) and fill in the correct configurations.
+2. Run `meltano install extractor tap-NAME-OF-EXTRACTOR`
+3. Run `meltano install loader target-jsonl`
+4. Finally, run `meltano elt tap-measure-studio target-jsonl`
+
+Note that you may need to reinstall your extractor when you make updates.
+
+Alternatively you can attempt to run this tap without Meltano with `tap-s3-csv -c config.json --properties="catalog.json"` However, this tap may behave differently when ran locally vs. through Meltano.
+
 
 ### To run tests:
 

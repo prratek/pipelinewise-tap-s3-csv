@@ -10,3 +10,7 @@ dist/
 venv
 virtualenvs
 config.json
+meltano.yml
+.meltano
+output
+build

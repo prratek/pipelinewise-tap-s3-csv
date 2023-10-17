@@ -11,7 +11,7 @@ setup(name='pipelinewise-tap-s3-csv',
       long_description=long_description,
       long_description_content_type='text/markdown',
       author='TransferWise',
-      url='https://github.com/transferwise/pipelinewise-tap-s3-csv',
+      url='https://github.com/prratek/pipelinewise-tap-s3-csv',
       classifiers=[
           'License :: OSI Approved :: GNU Affero General Public License v3',
           'Programming Language :: Python :: 3 :: Only'
