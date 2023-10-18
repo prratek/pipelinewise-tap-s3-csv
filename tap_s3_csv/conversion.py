@@ -51,6 +51,27 @@ def generate_schema(samples: List[Dict], table_spec: Dict) -> Dict:
     return schema
 
 
+def generate_string_schema(samples: List[Dict], table_spec: Dict) -> Dict:
+    """
+    Build json schema, all columns in the headers would be string.
+    with format date-time if date_overrides has been configured for the table.
+    :param samples: List of dictionaries containing samples data from csv file(s)
+    :param table_spec: table/stream specs given in the tap definition
+    :return: json schema dictionary representing  the table
+    """
+    schema = {}
+    date_overrides = set(table_spec.get('date_overrides', []))
+
+    for sample in samples:
+        for header in sample.keys():
+            schema[header] = {'type': ['null', 'string']}
+
+            if header in date_overrides:
+                schema[header]['format'] = 'date-time'
+
+    return schema
+
+
 def _csv2bytesio(data: List[Dict]) -> io.BytesIO:
     """
     Converts a list of dictionaries to a csv BytesIO which is a csv file like object

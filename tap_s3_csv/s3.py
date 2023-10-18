@@ -98,7 +98,12 @@ def get_sampled_schema_for_table(config: Dict, table_spec: Dict) -> Dict:
         SDC_EXTRA_COLUMN: {'type': 'array', 'items': {'type': 'string'}},
     }
 
-    data_schema = conversion.generate_schema(samples, table_spec)
+    if 'force_strings' in config and config['force_strings'].lower() == "true":
+        LOGGER.info("force_strings is set to True. Generating string schema.")
+        data_schema = conversion.generate_string_schema(samples, table_spec)
+    else:
+        LOGGER.info("Guessing schema from samples...")
+        data_schema = conversion.generate_schema(samples, table_spec)
 
     return {
         'type': 'object',

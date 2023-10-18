@@ -1,0 +1,50 @@
+version: 1
+send_anonymous_usage_stats: true
+project_id: "tap-s3-csv"
+include_paths:
+- ./*.meltano.yml
+default_environment: test
+environments:
+- name: test
+  config:
+    plugins:
+      extractors:
+      - name: tap-s3-csv
+        config:
+          start_date: '2023-10-01T00:00:00Z'
+plugins:
+  extractors:
+  - name: "tap-s3-csv"
+    namespace: tap_s3_csv
+    pip_url: -e .
+    executable: tap-s3-csv
+    capabilities:
+    - discover
+    - properties
+    - state
+    settings:
+    - name: aws_access_key_id
+      kind: password
+    - name: aws_secret_access_key
+      kind: password
+    - name: bucket
+      kind: string
+    - name: tables
+      kind: array
+  config:
+    aws_access_key_id: AWS_ACCESS_KEY_ID
+    aws_secret_access_key: AWS_SECRET_ACCESS_KEY
+    start_date: '2023-10-01T00:00:00Z'
+    bucket: S3_BUCKET
+    # infer_schema: 'false'
+    # force_strings: 'true'
+    tables:
+    - search_pattern: SEARCH_STRING
+      table_name: TABLE_NAME
+      search_prefix: '2023-10-01'
+      delimiter: ','
+      escapechar: \
+  loaders:
+  - name: target-jsonl
+    variant: andyh1203
+    pip_url: target-jsonl
